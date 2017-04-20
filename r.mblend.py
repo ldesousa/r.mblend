@@ -16,10 +16,15 @@ import grass.script as gscript
 
 def main():
     options, flags = gscript.parser()
-    elevation = options['high']
-    shade = options['low']
-    print(elevation, shade)
+    high = options['high']
+    low = options['low']
+    print(high, low)
+
+	# Set the region to the two input rasters
+    gscript.run_command('g.region', raster=high + "," + low)
+    print gscript.region()
 
 if __name__ == '__main__':
+    gscript.use_temp_region()
     main()
 
