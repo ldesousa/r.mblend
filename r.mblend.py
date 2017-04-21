@@ -110,6 +110,7 @@ def main():
     gscript.run_command('v.db.update', map=weight_points_edge, column='value', value='0')
     gscript.run_command('v.patch', input=weight_points_edge+','+diff_points_edge, output=points_edges, flags='e')
 
+
 if __name__ == '__main__':
     atexit.register(cleanup)
     gscript.use_temp_region()
