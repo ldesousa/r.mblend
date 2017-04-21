@@ -18,7 +18,7 @@ import grass.script as gscript
 
 index = 0
 TMP_MAPS = []
-
+WEIGHT_MAX = 10000
 
 def getTemporaryIdentifier():
     global index
@@ -40,6 +40,10 @@ def main():
     high = options['high']
     low = options['low']
     print(high, low)
+    
+    # TODO
+    # 1. Obtain resolution
+    # 2. Add input for distance cut off
 
 	# Set the region to the two input rasters
     gscript.run_command('g.region', raster=high + "," + low)
@@ -81,6 +85,25 @@ def main():
 	# 2. get the points along the edge
     gscript.run_command('v.select', ainput=diff_points, binput=interpol_area_buff, output=diff_points_edge, operator='overlap')
 
+    # Get points in low resolution farther away from high resolution raster
+    dist_high = getTemporaryIdentifier()
+    weights = getTemporaryIdentifier()
+    weight_points = getTemporaryIdentifier()
+    interpol_area_in_buff = getTemporaryIdentifier()
+    weight_points_all_edges = getTemporaryIdentifier()
+    weight_points_edge = getTemporaryIdentifier()
+    # 1. Distance to High resolution raster
+    gscript.run_command('r.grow.distance', input=high, distance=dist_high)
+    # 2. Rescale to the interval [0,10000]: these are the weights
+    gscript.run_command('r.rescale', input=dist_high, output=weights, to='0,' + str(WEIGHT_MAX))
+    # 3. Vectorise distances to points
+    gscript.run_command('r.to.vect', input=weights, output=weight_points, type='point')
+    # 4. Create inner buffer to interpolation area 
+    gscript.run_command('v.buffer', input=interpol_area, output=interpol_area_in_buff, type='area', distance='-20')
+    # 5. Select points at the border
+    gscript.run_command('v.select', ainput=weight_points, binput=interpol_area_in_buff, output=weight_points_all_edges, operator='disjoint')
+    # 6. Select those with higher weights
+    gscript.run_command('v.extract', input=weight_points_all_edges, output=weight_points_edge, where="value>9500")
 
 if __name__ == '__main__':
     atexit.register(cleanup)
