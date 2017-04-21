@@ -105,6 +105,11 @@ def main():
     # 6. Select those with higher weights
     gscript.run_command('v.extract', input=weight_points_all_edges, output=weight_points_edge, where="value>9500")
 
+    # Merge the two point edges and set low res edge to zero
+    points_edges = getTemporaryIdentifier()
+    gscript.run_command('v.db.update', map=weight_points_edge, column='value', value='0')
+    gscript.run_command('v.patch', input=weight_points_edge+','+diff_points_edge, output=points_edges, flags='e')
+
 if __name__ == '__main__':
     atexit.register(cleanup)
     gscript.use_temp_region()
