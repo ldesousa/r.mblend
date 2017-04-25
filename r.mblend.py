@@ -78,7 +78,7 @@ def main():
 	# Compute difference between the two rasters and vectorise to points
     diff = getTemporaryIdentifier()
     diff_points = getTemporaryIdentifier()
-    gscript.mapcalc(diff + " = highRes - lowResInter")
+    gscript.mapcalc(diff + ' = ' + high + ' - ' + low_res_inter)
     gscript.run_command('r.to.vect', input=diff, output=diff_points, type='point')
 
 	# Obtain edge points of the high resolution raster
