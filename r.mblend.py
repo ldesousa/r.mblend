@@ -14,6 +14,15 @@
 #%option OUTPUT
 #% key: output
 #%end
+#%option
+#% key: far_edge
+#% key_desc: value
+#% type: double
+#% description: Percentage of distance to high resolution raster used to determine far edge. Number between 0 and 100; 95% by default.
+#% answer: 95
+#% multiple: no
+#% required: no
+#%end
 
 import os
 import atexit
@@ -24,6 +33,7 @@ TMP_MAPS = []
 WEIGHT_MAX = 10000
 COL_VALUE = 'value'
 COL_FLAG = 'flag'
+
 
 def getTemporaryIdentifier():
     global index
@@ -45,9 +55,11 @@ def main():
     high = options['high']
     low = options['low']
     output = options['output']
+    far_edge = float(options['far_edge'])
     
-    # TODO
-    # 2. Add input for distance cut off
+    if (far_edge < 0 or far_edge > 100):
+        print('ERROR: far_edge must be a percentage between 0 and 100.')
+        exit()
 
 	# Set the region to the two input rasters
     gscript.run_command('g.region', raster=high + "," + low)
@@ -113,7 +125,8 @@ def main():
     # 5. Select points at the border
     gscript.run_command('v.select', ainput=weight_points, binput=interpol_area_in_buff, output=weight_points_all_edges, operator='disjoint')
     # 6. Select those with higher weights
-    gscript.run_command('v.extract', input=weight_points_all_edges, output=weight_points_edge, where=COL_VALUE + '>9500')
+    cut_off = str(far_edge / 100 * WEIGHT_MAX)
+    gscript.run_command('v.extract', input=weight_points_all_edges, output=weight_points_edge, where=COL_VALUE + '>' + cut_off)
 
     # Merge the two point edges and set low res edge to zero
     points_edges = getTemporaryIdentifier()
