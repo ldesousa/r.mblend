@@ -41,11 +41,11 @@ def cleanup():
 
 
 def main():
+
     options, flags = gscript.parser()
     high = options['high']
     low = options['low']
     output = options['output']
-    print(high, low)
     
     # TODO
     # 1. Obtain resolution
@@ -53,7 +53,13 @@ def main():
 
 	# Set the region to the two input rasters
     gscript.run_command('g.region', raster=high + "," + low)
-    print gscript.region()
+    # Determine cell side
+    region = gscript.region()
+    print(region)
+    if region['nsres'] > region['ewres']:
+        cell_side = region['nsres']
+    else:
+        cell_side = region['ewres']
 
     # Make cell size compatible
     low_res_inter = getTemporaryIdentifier()
@@ -87,7 +93,7 @@ def main():
     interpol_area_buff = getTemporaryIdentifier()
     diff_points_edge = getTemporaryIdentifier()
 	# 1. buffer around area of interest - pixel size must be known
-    gscript.run_command('v.buffer', input=interpol_area, output=interpol_area_buff, type='area', distance=20)
+    gscript.run_command('v.buffer', input=interpol_area, output=interpol_area_buff, type='area', distance=cell_side)
 	# 2. get the points along the edge
     gscript.run_command('v.select', ainput=diff_points, binput=interpol_area_buff, output=diff_points_edge, operator='overlap')
 
@@ -105,7 +111,7 @@ def main():
     # 3. Vectorise distances to points
     gscript.run_command('r.to.vect', input=weights, output=weight_points, type='point')
     # 4. Create inner buffer to interpolation area 
-    gscript.run_command('v.buffer', input=interpol_area, output=interpol_area_in_buff, type='area', distance='-20')
+    gscript.run_command('v.buffer', input=interpol_area, output=interpol_area_in_buff, type='area', distance='-' + str(cell_side))
     # 5. Select points at the border
     gscript.run_command('v.select', ainput=weight_points, binput=interpol_area_in_buff, output=weight_points_all_edges, operator='disjoint')
     # 6. Select those with higher weights
