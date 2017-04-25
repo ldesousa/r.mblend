@@ -114,6 +114,16 @@ def main():
     gscript.run_command('v.db.update', map=weight_points_edge, column='value', value='0')
     gscript.run_command('v.patch', input=weight_points_edge+','+diff_points_edge, output=points_edges, flags='e')
 
+    # Interpolate stitching raster
+    stitching_full = getTemporaryIdentifier()
+    interpol_area_mask = getTemporaryIdentifier()
+    stitching = getTemporaryIdentifier()
+    gscript.run_command('v.surf.idw', input=points_edges, column='value', output=stitching_full, power=2, npoints=50)
+    # Create mask
+    gscript.run_command('v.to.rast', input=interpol_area, output=interpol_area_mask, use='val', value=1)
+    # Crop to area of interest
+    gscript.mapcalc(stitching + ' = if(' + interpol_area_mask + ',' + stitching_full+ ')')
+    
 
 if __name__ == '__main__':
     atexit.register(cleanup)
