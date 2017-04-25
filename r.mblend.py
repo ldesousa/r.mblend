@@ -28,16 +28,15 @@ COL_FLAG = 'flag'
 def getTemporaryIdentifier():
     global index
     global TMP_MAPS
-    id = 'tmp_raster_' + str(os.getpid()) + str(index)
+    id = 'tmp_' + str(os.getpid()) + str(index)
     index = index + 1
     TMP_MAPS.append(id)
     return id
 
 
 def cleanup():
-    print("Temporary raster to remove:")
-    print(TMP_MAPS)
-    gscript.run_command('g.remove', type='raster', name=','.join(TMP_MAPS), flags='f')
+    while len(TMP_MAPS) > 0:
+        gscript.run_command('g.remove', type='all', name=TMP_MAPS.pop(), flags='f', quiet=True)
 
 
 def main():
@@ -48,7 +47,6 @@ def main():
     output = options['output']
     
     # TODO
-    # 1. Obtain resolution
     # 2. Add input for distance cut off
 
 	# Set the region to the two input rasters
