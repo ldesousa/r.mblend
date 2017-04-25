@@ -131,7 +131,14 @@ def main():
     # Sum to low res
     gscript.mapcalc(smooth_low_res + ' = lowRes + stitching')
     # Add both rasters
-    gscript.run_command('r.patch', input=smooth_low_res + ',' + high, output=output)
+    try:
+        gscript.run_command('r.patch', input=smooth_low_res + ',' + high, output=output)
+    except Exception, ex: 
+        print('Failed to create smoothed raster.')
+        exit()
+        
+    print('SUCCESS: smoothed raster created.')
+
 
 if __name__ == '__main__':
     atexit.register(cleanup)
