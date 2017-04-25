@@ -22,6 +22,8 @@ import grass.script as gscript
 index = 0
 TMP_MAPS = []
 WEIGHT_MAX = 10000
+COL_VALUE = 'value'
+COL_FLAG = 'flag'
 
 def getTemporaryIdentifier():
     global index
@@ -67,12 +69,12 @@ def main():
     low_extent = getTemporaryIdentifier()
     high_extent = getTemporaryIdentifier()
     interpol_area = getTemporaryIdentifier()
-    gscript.run_command('v.db.addcolumn', map=low_vect, columns="flag integer")
-    gscript.run_command('v.db.update', map=low_vect, col="flag", qcol="1")
-    gscript.run_command('v.dissolve', input=low_vect, output=low_extent, column="flag")
-    gscript.run_command('v.db.addcolumn', map=high_vect, columns="flag integer")
-    gscript.run_command('v.db.update', map=high_vect, col="flag", qcol="1")
-    gscript.run_command('v.dissolve', input=high_vect, output=high_extent, column="flag")
+    gscript.run_command('v.db.addcolumn', map=low_vect, columns=COL_FLAG + ' integer')
+    gscript.run_command('v.db.update', map=low_vect, col=COL_FLAG, qcol='1')
+    gscript.run_command('v.dissolve', input=low_vect, output=low_extent, column=COL_FLAG)
+    gscript.run_command('v.db.addcolumn', map=high_vect, columns=COL_FLAG + ' integer')
+    gscript.run_command('v.db.update', map=high_vect, col=COL_FLAG, qcol='1')
+    gscript.run_command('v.dissolve', input=high_vect, output=high_extent, column=COL_FLAG)
     gscript.run_command('v.overlay', ainput=low_extent, binput=high_extent, output=interpol_area, operator='not')
 
 	# Compute difference between the two rasters and vectorise to points
@@ -107,18 +109,18 @@ def main():
     # 5. Select points at the border
     gscript.run_command('v.select', ainput=weight_points, binput=interpol_area_in_buff, output=weight_points_all_edges, operator='disjoint')
     # 6. Select those with higher weights
-    gscript.run_command('v.extract', input=weight_points_all_edges, output=weight_points_edge, where="value>9500")
+    gscript.run_command('v.extract', input=weight_points_all_edges, output=weight_points_edge, where=COL_VALUE + '>9500')
 
     # Merge the two point edges and set low res edge to zero
     points_edges = getTemporaryIdentifier()
-    gscript.run_command('v.db.update', map=weight_points_edge, column='value', value='0')
+    gscript.run_command('v.db.update', map=weight_points_edge, column=COL_VALUE, value='0')
     gscript.run_command('v.patch', input=weight_points_edge+','+diff_points_edge, output=points_edges, flags='e')
 
     # Interpolate stitching raster
     stitching_full = getTemporaryIdentifier()
     interpol_area_mask = getTemporaryIdentifier()
     stitching = getTemporaryIdentifier()
-    gscript.run_command('v.surf.idw', input=points_edges, column='value', output=stitching_full, power=2, npoints=50)
+    gscript.run_command('v.surf.idw', input=points_edges, column=COL_VALUE, output=stitching_full, power=2, npoints=50)
     # Create mask
     gscript.run_command('v.to.rast', input=interpol_area, output=interpol_area_mask, use='val', value=1)
     # Crop to area of interest
