@@ -11,6 +11,9 @@
 #%option LOW
 #% key: low
 #%end
+#%option OUTPUT
+#% key: output
+#%end
 
 import os
 import atexit
@@ -39,6 +42,7 @@ def main():
     options, flags = gscript.parser()
     high = options['high']
     low = options['low']
+    output = options['output']
     print(high, low)
     
     # TODO
