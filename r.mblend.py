@@ -57,7 +57,19 @@ def main():
     output = options['output']
     far_edge = float(options['far_edge'])
     
-    if (far_edge < 0 or far_edge > 100):
+    if(high is None or high == ""):
+        print('ERROR: high is a mandatory parameter.')
+        exit()
+    
+    if(low is None or low == ""):
+        print('ERROR: low is a mandatory parameter.')
+        exit()
+     
+    if(output is None or output == ""):
+        print('ERROR: output is a mandatory parameter.')
+        exit()
+           
+    if(far_edge < 0 or far_edge > 100):
         print('ERROR: far_edge must be a percentage between 0 and 100.')
         exit()
 
