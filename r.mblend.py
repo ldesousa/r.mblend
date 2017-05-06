@@ -158,7 +158,7 @@ def main():
     # Apply stitching
     smooth_low_res = getTemporaryIdentifier()
     # Sum to low res
-    gscript.mapcalc(smooth_low_res + ' = lowRes + stitching')
+    gscript.mapcalc(smooth_low_res + ' = ' + low + ' + ' + stitching)
     # Add both rasters
     try:
         gscript.run_command('r.patch', input=smooth_low_res + ',' + high, output=output)
