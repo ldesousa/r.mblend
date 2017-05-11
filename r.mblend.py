@@ -88,27 +88,21 @@ def main():
     low_res_inter = getTemporaryIdentifier()
     print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.resamp.interp input=low")
     gscript.run_command('r.resamp.interp', input=low, output=low_res_inter, method='nearest')
-
-	# Vectorise rasters
-    high_vect = getTemporaryIdentifier()
-    low_vect = getTemporaryIdentifier()
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.to.vect output=high_vect")
-    gscript.run_command('r.to.vect', input=high, output=high_vect, type='area')
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.to.vect output=low_vect")
-    gscript.run_command('r.to.vect', input=low, output=low_vect, type='area')
-
-    # Dissolve and overlay to obtain extent to interpolate
+    
+    # Obtain extent to interpolate
+    low_extent_rast = getTemporaryIdentifier()
+    high_extent_rast = getTemporaryIdentifier()
     low_extent = getTemporaryIdentifier()
     high_extent = getTemporaryIdentifier()
     interpol_area = getTemporaryIdentifier()
-    gscript.run_command('v.db.addcolumn', map=low_vect, columns=COL_FLAG + ' integer')
-    gscript.run_command('v.db.update', map=low_vect, col=COL_FLAG, qcol='1')
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.dissolve output=low_extent")
-    gscript.run_command('v.dissolve', input=low_vect, output=low_extent, column=COL_FLAG)
-    gscript.run_command('v.db.addcolumn', map=high_vect, columns=COL_FLAG + ' integer')
-    gscript.run_command('v.db.update', map=high_vect, col=COL_FLAG, qcol='1')
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.dissolve output=high_extent")
-    gscript.run_command('v.dissolve', input=high_vect, output=high_extent, column=COL_FLAG)
+    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " mapcalc low_extent_rast")
+    gscript.mapcalc(low_extent_rast + ' = ' + low + ' * 0')
+    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " mapcalc high_extent_rast")
+    gscript.mapcalc(high_extent_rast + ' = ' + high + ' * 0')
+    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.to.vect output=low_extent")
+    gscript.run_command('r.to.vect', input=low_extent_rast, output=low_extent, type='area')
+    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.to.vect output=high_extent")
+    gscript.run_command('r.to.vect', input=high_extent_rast, output=high_extent, type='area')
     print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.overlay output=interpol_area")
     gscript.run_command('v.overlay', ainput=low_extent, binput=high_extent, output=interpol_area, operator='not')
 
