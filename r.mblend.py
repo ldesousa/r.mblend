@@ -74,19 +74,19 @@ def main():
     far_edge = float(options['far_edge'])
     
     if(high is None or high == ""):
-        print('ERROR: high is a mandatory parameter.')
+        print('[r.mblend] ERROR: high is a mandatory parameter.')
         exit()
     
     if(low is None or low == ""):
-        print('ERROR: low is a mandatory parameter.')
+        print('[r.mblend] ERROR: low is a mandatory parameter.')
         exit()
      
     if(output is None or output == ""):
-        print('ERROR: output is a mandatory parameter.')
+        print('[r.mblend] ERROR: output is a mandatory parameter.')
         exit()
            
     if(far_edge < 0 or far_edge > 100):
-        print('ERROR: far_edge must be a percentage between 0 and 100.')
+        print('[r.mblend] ERROR: far_edge must be a percentage between 0 and 100.')
         exit()
 
 	# Set the region to the two input rasters
@@ -101,7 +101,7 @@ def main():
 
     # Make cell size compatible
     low_res_inter = getTemporaryIdentifier()
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.resamp.interp input=low")
+    print("[r.mblend] Resampling low resolution raster to higher resolution")
     gscript.run_command('r.resamp.interp', input=low, output=low_res_inter, method='nearest')
     
     # Obtain extent to interpolate
@@ -110,32 +110,32 @@ def main():
     low_extent = getTemporaryIdentifier()
     high_extent = getTemporaryIdentifier()
     interpol_area = getTemporaryIdentifier()
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " mapcalc low_extent_rast")
+    print("[r.mblend] Multiplying low resolution by zero")
     gscript.mapcalc(low_extent_rast + ' = ' + low + ' * 0')
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " mapcalc high_extent_rast")
+    print("[r.mblend] Multiplying high resolution by zero")
     gscript.mapcalc(high_extent_rast + ' = ' + high + ' * 0')
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.to.vect output=low_extent")
+    print("[r.mblend] Computing extent of low resolution")
     gscript.run_command('r.to.vect', input=low_extent_rast, output=low_extent, type='area')
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.to.vect output=high_extent")
+    print("[r.mblend] Computing extent of high resolution")
     gscript.run_command('r.to.vect', input=high_extent_rast, output=high_extent, type='area')
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.overlay output=interpol_area")
+    print("[r.mblend] Computing area to interpolate")
     gscript.run_command('v.overlay', ainput=low_extent, binput=high_extent, output=interpol_area, operator='not')
 
 	# Compute difference between the two rasters and vectorise to points
     diff = getTemporaryIdentifier()
     diff_points = getTemporaryIdentifier()
     gscript.mapcalc(diff + ' = ' + high + ' - ' + low_res_inter)
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.to.vect output=diff_points")
+    print("[r.mblend] Vectorising differences between input rasters")
     gscript.run_command('r.to.vect', input=diff, output=diff_points, type='point')
 
 	# Obtain edge points of the high resolution raster
     interpol_area_buff = getTemporaryIdentifier()
     diff_points_edge = getTemporaryIdentifier()
 	# 1. buffer around area of interest - pixel size must be known
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.buffer output=interpol_area_buff")
+    print("[r.mblend] Computing buffer around interpolation area")
     gscript.run_command('v.buffer', input=interpol_area, output=interpol_area_buff, type='area', distance=cell_side)
 	# 2. get the points along the edge
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.select output=diff_points_edge")
+    print("[r.mblend] Selecting points along the near edge")
     gscript.run_command('v.select', ainput=diff_points, binput=interpol_area_buff, output=diff_points_edge, operator='overlap')
 
     # Get points in low resolution farther away from high resolution raster
@@ -146,58 +146,59 @@ def main():
     weight_points_all_edges = getTemporaryIdentifier()
     weight_points_edge = getTemporaryIdentifier()
     # 1. Distance to High resolution raster
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.grow.distance")
+    print("[r.mblend] Computing distance to high resolution raster")
     gscript.run_command('r.grow.distance', input=high, distance=dist_high)
     # 2. Rescale to the interval [0,10000]: these are the weights
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.rescale output=weights")
+    print("[r.mblend] Rescaling distance to [0,10000] interval")
     gscript.run_command('r.rescale', input=dist_high, output=weights, to='0,' + str(WEIGHT_MAX))
     # 3. Vectorise distances to points
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.to.vect output=weight_points")
+    print("[r.mblend] Vectorising distances to points")
     gscript.run_command('r.to.vect', input=weights, output=weight_points, type='point')
     # 4. Create inner buffer to interpolation area 
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.buffer output=interpol_area_in_buff")
+    print("[r.mblend] Computing inner buffer to interpolation area")
     gscript.run_command('v.buffer', input=interpol_area, output=interpol_area_in_buff, type='area', distance='-' + str(cell_side))
     # 5. Select points at the border
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.select output=weight_points_all_edges")
+    print("[r.mblend] Selecting all points around inner buffer")
     gscript.run_command('v.select', ainput=weight_points, binput=interpol_area_in_buff, output=weight_points_all_edges, operator='disjoint')
     # 6. Select those with higher weights
     cut_off = str(far_edge / 100 * WEIGHT_MAX)
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.extract output=weight_points_edge")
+    print("[r.mblend] Selecting far edge points (using cut-off percentage)")
     gscript.run_command('v.extract', input=weight_points_all_edges, output=weight_points_edge, where=COL_VALUE + '>' + cut_off)
 
     # Merge the two point edges and set low res edge to zero
     points_edges = getTemporaryIdentifier()
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.db.update map=weight_points_edge")
+    print("[r.mblend] Setting far edge weights to zero")
     gscript.run_command('v.db.update', map=weight_points_edge, column=COL_VALUE, value='0')
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.patch output=points_edges")
+    print("[r.mblend] Patching the two edges")
     gscript.run_command('v.patch', input=weight_points_edge+','+diff_points_edge, output=points_edges, flags='e')
 
     # Interpolate stitching raster
     stitching_full = getTemporaryIdentifier()
     interpol_area_mask = getTemporaryIdentifier()
     stitching = getTemporaryIdentifier()
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.surf.idw output=stitching_full")
+    print("[r.mblend] Interpolating smoothing surface. This might take a while...")
     gscript.run_command('v.surf.idw', input=points_edges, column=COL_VALUE, output=stitching_full, power=2, npoints=50)
     # Create mask
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " v.to.rast output=interpol_area_mask")
+    print("[r.mblend] Creating mask for the interpolation area")
     gscript.run_command('v.to.rast', input=interpol_area, output=interpol_area_mask, use='val', value=1)
     # Crop to area of interest
-    print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " mapcalc output=stitching")
+    print("[r.mblend] Cropping the mask")
     gscript.mapcalc(stitching + ' = if(' + interpol_area_mask + ',' + stitching_full+ ')')
     
     # Apply stitching
     smooth_low_res = getTemporaryIdentifier()
     # Sum to low res
+    print("[r.mblend] Applying smoothing surface")
     gscript.mapcalc(smooth_low_res + ' = ' + low_res_inter + ' + ' + stitching)
     # Add both rasters
     try:
-        print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.patch output=output")
+        print("[r.mblend] Joining result into a single raster")
         gscript.run_command('r.patch', input=smooth_low_res + ',' + high, output=output)
     except Exception, ex: 
-        print('Failed to create smoothed raster.')
+        print('[r.mblend] ERROR: Failed to create smoothed raster.')
         exit()
         
-    print('SUCCESS: smoothed raster created.')
+    print('[r.mblend] SUCCESS: smoothed raster created.')
 
 
 if __name__ == '__main__':
