@@ -14,5 +14,5 @@ documents licence.
 Licence
 -------
 
-This set of scripts is released under the European Union Public Licence v 1.1.
+This programme is released under the European Union Public Licence v 1.1.
 Please consult the LICENCE file for details.

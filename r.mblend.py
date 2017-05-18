@@ -1,7 +1,22 @@
 #!/usr/bin/env python
 
+############################################################################
+#
+# MODULE:       r.mblend
+#
+# AUTHOR(S):    Luís Moreira de Sousa
+#
+# PURPOSE:      Blends two rasters of different spatial resolution.
+#
+# COPYRIGHT:    (c) 2017 Luís Moreira de Sousa
+#
+#               This programme is released under the European Union Public 
+#               Licence v 1.1. Please consult the LICENCE file for details.
+#
+#############################################################################
+
 #%module
-#% description: Blend tow rasters of different spatial resolution
+#% description: Blends two rasters of different spatial resolution
 #% keyword: raster
 #% keyword: resolution
 #%end
@@ -173,7 +188,7 @@ def main():
     # Apply stitching
     smooth_low_res = getTemporaryIdentifier()
     # Sum to low res
-    gscript.mapcalc(smooth_low_res + ' = ' + low + ' + ' + stitching)
+    gscript.mapcalc(smooth_low_res + ' = ' + low_res_inter + ' + ' + stitching)
     # Add both rasters
     try:
         print("[r.mblend] " + strftime("%Y-%m-%d %H:%M:%S", gmtime()) + " r.patch output=output")
