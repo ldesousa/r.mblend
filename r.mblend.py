@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 
 ############################################################################
 #
@@ -29,12 +30,21 @@
 #%option OUTPUT
 #% key: output
 #%end
-#%option
+#%option FAR_EDGE
 #% key: far_edge
 #% key_desc: value
 #% type: double
 #% description: Percentage of distance to high resolution raster used to determine far edge. Number between 0 and 100; 95% by default.
 #% answer: 95
+#% multiple: no
+#% required: no
+#%end
+#%option INTER_POINTS
+#% key: inter_points
+#% key_desc: value
+#% type: integer
+#% description: Number of points to use in interpolation. A higher number produces a smoother result but requires a lengthier computation. 50 by default.
+#% answer: 50
 #% multiple: no
 #% required: no
 #%end
@@ -72,6 +82,7 @@ def main():
     low = options['low']
     output = options['output']
     far_edge = float(options['far_edge'])
+    inter_points = int(options['inter_points'])
     
     if(high is None or high == ""):
         print('[r.mblend] ERROR: high is a mandatory parameter.')
@@ -87,6 +98,10 @@ def main():
            
     if(far_edge < 0 or far_edge > 100):
         print('[r.mblend] ERROR: far_edge must be a percentage between 0 and 100.')
+        exit()
+        
+    if(inter_points < 0):
+        print('[r.mblend] ERROR: inter_points must be a positive integer.')
         exit()
 
 	# Set the region to the two input rasters
@@ -177,7 +192,7 @@ def main():
     interpol_area_mask = getTemporaryIdentifier()
     stitching = getTemporaryIdentifier()
     print("[r.mblend] Interpolating smoothing surface. This might take a while...")
-    gscript.run_command('v.surf.idw', input=points_edges, column=COL_VALUE, output=stitching_full, power=2, npoints=50)
+    gscript.run_command('v.surf.idw', input=points_edges, column=COL_VALUE, output=stitching_full, power=2, npoints=inter_points)
     # Create mask
     print("[r.mblend] Creating mask for the interpolation area")
     gscript.run_command('v.to.rast', input=interpol_area, output=interpol_area_mask, use='val', value=1)
