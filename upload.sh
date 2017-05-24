@@ -6,7 +6,7 @@ cd ~/git/r.mblend
 pep8 --config=tools/pep8config.txt r.mblend.py
 
 # Copy files to svn folder
-cd ~/git/r.mbelnd
+cd ~/svn/r.mblend
 cp ~/git/r.mblend/*.py ~/git/r.mblend/*.html  ~/git/r.mblend/*.png . 
 
 # Apply propset
@@ -16,4 +16,4 @@ cp ~/git/r.mblend/*.py ~/git/r.mblend/*.html  ~/git/r.mblend/*.png .
 svn add *
 
 # Commit
-svn commit -m
+svn commit -m "$1"
