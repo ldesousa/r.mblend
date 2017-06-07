@@ -215,27 +215,21 @@ def main():
                         output=points_edges, flags='e')
 
     # Interpolate stitching raster
-    stitching_full = getTemporaryIdentifier()
-    interpol_area_mask = getTemporaryIdentifier()
-    stitching = getTemporaryIdentifier()
+    smoothing = getTemporaryIdentifier()
+    # Consign region to interpolation area
+    gscript.run_command('g.region', vector=interpol_area_buff)
     gscript.message(_("[r.mblend] Interpolating smoothing surface. This" +
                       " might take a while..."))
     gscript.run_command('v.surf.idw', input=points_edges, column=COL_VALUE,
-                        output=stitching_full, power=2, npoints=inter_points)
-    # Create mask
-    gscript.message(_("[r.mblend] Creating mask for the interpolation area"))
-    gscript.run_command('v.to.rast', input=interpol_area,
-                        output=interpol_area_mask, use='val', value=1)
-    # Crop to area of interest
-    gscript.message(_("[r.mblend] Cropping the mask"))
-    gscript.mapcalc(stitching + ' = if(' + interpol_area_mask + ',' +
-                    stitching_full + ')')
+                        output=smoothing, power=2, npoints=inter_points)
+    # Reset region to full extent
+    gscript.run_command('g.region', raster=high + "," + low)
 
     # Apply stitching
     smooth_low_res = getTemporaryIdentifier()
     # Sum to low res
     gscript.message(_("[r.mblend] Applying smoothing surface"))
-    gscript.mapcalc(smooth_low_res + ' = ' + low_res_inter + ' + ' + stitching)
+    gscript.mapcalc(smooth_low_res + ' = ' + low_res_inter + ' + ' + smoothing)
     # Add both rasters
     try:
         gscript.message(_("[r.mblend] Joining result into a single raster"))
