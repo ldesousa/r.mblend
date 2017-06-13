@@ -48,6 +48,10 @@
 #% multiple: no
 #% required: no
 #%end
+#%flag
+#% key: a
+#% description: Assign the average difference between the two rasters to the far edge (instead of zero). 
+#%end
 
 import os
 import atexit
@@ -55,6 +59,7 @@ from time import gmtime, strftime
 import grass.script as gscript
 
 index = 0
+far_edge_value = '0'
 TMP_MAPS = []
 WEIGHT_MAX = 10000
 COL_VALUE = 'value'
@@ -77,6 +82,7 @@ def cleanup():
 
 
 def main():
+    global far_edge_value
 
     options, flags = gscript.parser()
     high = options['high']
@@ -84,6 +90,7 @@ def main():
     output = options['output']
     far_edge = float(options['far_edge'])
     inter_points = int(options['inter_points'])
+    use_average_differences = flags['a']
 
     if(high is None or high == ""):
         gscript.error(_("[r.mblend] ERROR: high is a mandatory parameter."))
@@ -151,6 +158,17 @@ def main():
                       " rasters"))
     gscript.run_command('r.to.vect', input=diff, output=diff_points,
                         type='point')
+    
+    # Compute average of the differences if flag -a was passed
+    if use_average_differences:
+        p = gscript.pipe_command('r.univar', map=diff)
+        result = {}
+        for line in p.stdout:
+            vector = line.split(": ")
+            if vector[0] == "mean":
+                print("Found it: " + vector[1])
+                far_edge_value = vector[1]
+        p.wait()
 
     # Obtain edge points of the high resolution raster
     interpol_area_buff = getTemporaryIdentifier()
@@ -208,7 +226,7 @@ def main():
     points_edges = getTemporaryIdentifier()
     gscript.message(_("[r.mblend] Setting far edge weights to zero"))
     gscript.run_command('v.db.update', map=weight_points_edge,
-                        column=COL_VALUE, value='0')
+                        column=COL_VALUE, value=far_edge_value)
     gscript.message(_("[r.mblend] Patching the two edges"))
     gscript.run_command('v.patch',
                         input=weight_points_edge + ',' + diff_points_edge,
