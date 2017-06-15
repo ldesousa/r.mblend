@@ -232,7 +232,7 @@ def main():
                         input=weight_points_edge + ',' + diff_points_edge,
                         output=points_edges, flags='e')
 
-    # Interpolate stitching raster
+    # Interpolate smoothing raster
     smoothing = getTemporaryIdentifier()
     # Consign region to interpolation area
     gscript.run_command('g.region', vector=interpol_area_buff)
@@ -251,7 +251,7 @@ def main():
     # Add both rasters
     try:
         gscript.message(_("[r.mblend] Joining result into a single raster"))
-        gscript.run_command('r.patch', input=smooth_low_res + ',' + high,
+        gscript.run_command('r.patch', input=high + ',' + smooth_low_res,
                             output=output)
     except Exception, ex:
         gscript.error(_("[r.mblend] ERROR: Failed to create smoothed raster."))
