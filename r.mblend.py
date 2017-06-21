@@ -163,13 +163,20 @@ def main():
                         output=interpol_area, operator='not')
 
     # Compute difference between the two rasters and vectorise to points
+    interpol_area_buff = getTemporaryIdentifier()
     diff = getTemporaryIdentifier()
-    diff_points = getTemporaryIdentifier()
+    diff_points_edge = getTemporaryIdentifier()
     gscript.mapcalc(diff + ' = ' + high + ' - ' + low_res_inter)
+    gscript.message(_("[r.mblend] Computing buffer around interpolation area"))
+    gscript.run_command('v.buffer', input=interpol_area,
+                        output=interpol_area_buff, type='area',
+                        distance=cell_side)
     gscript.message(_("[r.mblend] Vectorising differences between input" +
                       " rasters"))
-    gscript.run_command('r.to.vect', input=diff, output=diff_points,
+    gscript.run_command('r.mask', vector=interpol_area_buff)
+    gscript.run_command('r.to.vect', input=diff, output=diff_points_edge,
                         type='point')
+    gscript.run_command('r.mask', flags='r')
     
     # Compute average of the differences if flag -a was passed
     if use_average_differences:
@@ -182,19 +189,6 @@ def main():
                 far_edge_value = vector[1]
         p.wait()
 
-    # Obtain edge points of the high resolution raster
-    interpol_area_buff = getTemporaryIdentifier()
-    diff_points_edge = getTemporaryIdentifier()
-    # 1. buffer around area of interest - pixel size must be known
-    gscript.message(_("[r.mblend] Computing buffer around interpolation area"))
-    gscript.run_command('v.buffer', input=interpol_area,
-                        output=interpol_area_buff, type='area',
-                        distance=cell_side)
-    # 2. get the points along the edge
-    gscript.message(_("[r.mblend] Selecting points along the near edge"))
-    gscript.run_command('v.select', ainput=diff_points,
-                        binput=interpol_area_buff, output=diff_points_edge,
-                        operator='overlap')
     # Get points in low resolution farther away from high resolution raster
     dist_high = getTemporaryIdentifier()
     weights = getTemporaryIdentifier()
@@ -252,6 +246,7 @@ def main():
     
     # Interpolate smoothing raster
     smoothing = getTemporaryIdentifier()
+    interpol_area_rst = getTemporaryIdentifier()
     # Consign region to interpolation area
     gscript.run_command('g.region', vector=interpol_area_buff)
     gscript.message(_("[r.mblend] Interpolating smoothing surface. This" +
