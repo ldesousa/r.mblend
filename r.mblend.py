@@ -23,12 +23,15 @@
 #%end
 #%option HIGH
 #% key: high
+#% description: High resolution input raster.
 #%end
 #%option LOW
 #% key: low
+#% description: Low resolution input raster.
 #%end
 #%option OUTPUT
 #% key: output
+#% description: Name of output raster.
 #%end
 #%option FAR_EDGE
 #% key: far_edge
