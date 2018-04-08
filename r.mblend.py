@@ -89,7 +89,7 @@ def cleanup():
 def compute_d_max(region):
     global d_max
     print("Region:\n" + str(region))
-    d_max = math.sqrt(math.pow(region['w'] - region['e'], 2) -
+    d_max = math.sqrt(math.pow(region['w'] - region['e'], 2) +
                       math.pow(region['n'] - region['s'], 2)) / 100
 
 
